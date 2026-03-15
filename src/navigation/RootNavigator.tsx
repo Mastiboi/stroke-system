@@ -5,18 +5,16 @@ import { View, ActivityIndicator } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useAuthStore, UserProfile } from "../store/useAuthStore";
 
-// Screens (Imports assumed)
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
+import ClinicianTreatmentScreen from "../screens/app/ClinicianTreatmentScreen";
 import EMODashboard from "../screens/app/EMODashboard";
 import ClinicianDashboard from "../screens/app/ClinicianDashboard";
+import ClinicianEvaluationScreen from "../screens/app/ClinicianEvaluationScreen";
 import RadiologistDashboard from "../screens/app/RadiologistDashboard";
+import RadiologistReportScreen from "../screens/app/RadiologistReportScreen";
 
-export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
-};
-
+export type AuthStackParamList = { Login: undefined; Register: undefined };
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator();
 
@@ -35,14 +33,12 @@ export default function RootNavigator() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) {
-        fetchProfile(session.user.id);
-      } else {
+      if (session) fetchProfile(session.user.id);
+      else {
         setProfile(null);
         setLoading(false);
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -52,10 +48,7 @@ export default function RootNavigator() {
       .select("*")
       .eq("id", userId)
       .single();
-
-    if (!error && data) {
-      setProfile(data as UserProfile);
-    }
+    if (!error && data) setProfile(data as UserProfile);
     setLoading(false);
   };
 
@@ -80,16 +73,32 @@ export default function RootNavigator() {
             <AppStack.Screen name="EMODashboard" component={EMODashboard} />
           )}
           {profile.role === "CLINICIAN" && (
-            <AppStack.Screen
-              name="ClinicianDashboard"
-              component={ClinicianDashboard}
-            />
+            <>
+              <AppStack.Screen
+                name="ClinicianDashboard"
+                component={ClinicianDashboard}
+              />
+              <AppStack.Screen
+                name="ClinicianEvaluation"
+                component={ClinicianEvaluationScreen}
+              />
+              <AppStack.Screen
+                name="ClinicianTreatment"
+                component={ClinicianTreatmentScreen}
+              />
+            </>
           )}
           {profile.role === "RADIOLOGIST" && (
-            <AppStack.Screen
-              name="RadiologistDashboard"
-              component={RadiologistDashboard}
-            />
+            <>
+              <AppStack.Screen
+                name="RadiologistDashboard"
+                component={RadiologistDashboard}
+              />
+              <AppStack.Screen
+                name="RadiologistReport"
+                component={RadiologistReportScreen}
+              />
+            </>
           )}
         </AppStack.Navigator>
       )}

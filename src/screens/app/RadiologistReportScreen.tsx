@@ -23,9 +23,10 @@ export default function RadiologistReportScreen({ route, navigation }: Props) {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      // FIXED: Using array instead of MediaTypeOptions
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
-      quality: 0.8, // Compress slightly for mobile upload speed
+      quality: 0.8,
     });
 
     if (!result.canceled) {

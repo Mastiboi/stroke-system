@@ -5,38 +5,34 @@ import { PatientRow } from "../../types/patient";
 import { useAuthStore } from "../../store/useAuthStore";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-// Note: Ensure ClinicianEvaluation is added to your AppStack params
 type Props = NativeStackScreenProps<any, "ClinicianDashboard">;
+type TabType = "NEW" | "READY";
 
 export default function ClinicianDashboard({ navigation }: Props) {
   const { signOut } = useAuthStore();
-  const [pendingPatients, setPendingPatients] = useState<PatientRow[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>("NEW");
+  const [patients, setPatients] = useState<PatientRow[]>([]);
 
   useEffect(() => {
-    const fetchPending = async () => {
+    const fetchPatients = async () => {
       const { data } = await supabase
         .from("patients")
         .select("*")
-        .eq("status", "AWAITING_CLINICIAN")
-        .order("alert_clinician_at", { ascending: true });
-      if (data) setPendingPatients(data as PatientRow[]);
+        .in("status", ["AWAITING_CLINICIAN", "TREATMENT_IN_PROGRESS"])
+        .order("created_at", { ascending: true });
+      if (data) setPatients(data as PatientRow[]);
     };
 
-    fetchPending();
+    fetchPatients();
 
+    // Listen to ALL patient changes to handle transitions between statuses perfectly
     const channel = supabase
-      .channel("clinician_alerts")
+      .channel("clinician_dashboard_sync")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "patients",
-          filter: `status=eq.AWAITING_CLINICIAN`,
-        },
-        (payload) => {
-          // Re-fetch to ensure exact ordering and state sync, or manually merge payload
-          fetchPending();
+        { event: "*", schema: "public", table: "patients" },
+        () => {
+          fetchPatients();
         },
       )
       .subscribe();
@@ -46,37 +42,80 @@ export default function ClinicianDashboard({ navigation }: Props) {
     };
   }, []);
 
+  const filteredPatients = patients.filter((p) =>
+    activeTab === "NEW"
+      ? p.status === "AWAITING_CLINICIAN"
+      : p.status === "TREATMENT_IN_PROGRESS",
+  );
+
   return (
     <View className="flex-1 bg-slate-50">
-      <View className="bg-red-600 pt-16 pb-6 px-6 flex-row justify-between items-center shadow-sm">
-        <View>
-          <Text className="text-white/80 font-medium">Clinician Portal</Text>
-          <Text className="text-white text-2xl font-bold">
-            Pending Evaluations
-          </Text>
+      <View className="bg-red-600 pt-16 pb-6 px-6 shadow-sm">
+        <View className="flex-row justify-between items-center mb-6">
+          <View>
+            <Text className="text-white/80 font-medium">Clinician Portal</Text>
+            <Text className="text-white text-2xl font-bold">Stroke Queue</Text>
+          </View>
+          <TouchableOpacity
+            onPress={signOut}
+            className="bg-red-700 px-4 py-2 rounded-lg"
+          >
+            <Text className="text-white font-medium">Log Out</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={signOut}
-          className="bg-red-700 px-4 py-2 rounded-lg"
-        >
-          <Text className="text-white font-medium">Log Out</Text>
-        </TouchableOpacity>
+
+        {/* Custom Segmented Tabs */}
+        <View className="flex-row bg-red-800/50 p-1 rounded-xl">
+          <TouchableOpacity
+            onPress={() => setActiveTab("NEW")}
+            className={`flex-1 py-2 rounded-lg items-center ${activeTab === "NEW" ? "bg-white" : "bg-transparent"}`}
+          >
+            <Text
+              className={`font-bold ${activeTab === "NEW" ? "text-red-600" : "text-white/70"}`}
+            >
+              New Alerts (
+              {patients.filter((p) => p.status === "AWAITING_CLINICIAN").length}
+              )
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab("READY")}
+            className={`flex-1 py-2 rounded-lg items-center ${activeTab === "READY" ? "bg-white" : "bg-transparent"}`}
+          >
+            <Text
+              className={`font-bold ${activeTab === "READY" ? "text-red-600" : "text-white/70"}`}
+            >
+              Scans Ready (
+              {
+                patients.filter((p) => p.status === "TREATMENT_IN_PROGRESS")
+                  .length
+              }
+              )
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
-        data={pendingPatients}
+        data={filteredPatients}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate("ClinicianEvaluation", { patient: item })
+              activeTab === "NEW"
+                ? navigation.navigate("ClinicianEvaluation", { patient: item })
+                : navigation.navigate("ClinicianTreatment", { patient: item })
             }
-            className="bg-white p-5 mb-4 rounded-xl border-l-4 border-red-500 shadow-sm flex-row justify-between items-center"
+            className={`bg-white p-5 mb-4 rounded-xl border-l-4 shadow-sm flex-row justify-between items-center ${activeTab === "NEW" ? "border-red-500" : "border-blue-500"}`}
           >
             <View>
-              <Text className="text-red-600 font-bold text-xs mb-1">
-                CODE STROKE ACTIVE
+              <Text
+                className={`${activeTab === "NEW" ? "text-red-600" : "text-blue-600"} font-bold text-xs mb-1`}
+              >
+                {activeTab === "NEW"
+                  ? "AWAITING EVALUATION"
+                  : "RADIOLOGY REPORT READY"}
               </Text>
               <Text className="font-bold text-xl text-slate-900">
                 {item.uhid}
@@ -85,16 +124,20 @@ export default function ClinicianDashboard({ navigation }: Props) {
                 {item.age} yrs • {item.gender}
               </Text>
             </View>
-            <View className="bg-red-50 px-3 py-2 rounded-lg">
-              <Text className="text-red-700 font-semibold">Evaluate ➔</Text>
+            <View
+              className={`${activeTab === "NEW" ? "bg-red-50" : "bg-blue-50"} px-3 py-2 rounded-lg`}
+            >
+              <Text
+                className={`${activeTab === "NEW" ? "text-red-700" : "text-blue-700"} font-semibold`}
+              >
+                {activeTab === "NEW" ? "Evaluate ➔" : "Review ➔"}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View className="items-center justify-center mt-20">
-            <Text className="text-slate-400 text-lg">
-              No pending stroke evaluations.
-            </Text>
+            <Text className="text-slate-400 text-lg">Queue is clear.</Text>
           </View>
         }
       />

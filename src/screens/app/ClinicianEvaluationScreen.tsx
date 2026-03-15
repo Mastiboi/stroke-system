@@ -7,10 +7,14 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import {
   clinicianEvaluationSchema,
   ClinicianEvaluationForm,
@@ -24,7 +28,7 @@ export default function ClinicianEvaluationScreen({
   route,
   navigation,
 }: Props) {
-  const { patient } = route.params; // Passed from the dashboard
+  const { patient } = route.params;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -41,10 +45,29 @@ export default function ClinicianEvaluationScreen({
 
   const onsetTime = watch("symptom_onset_time");
 
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setValue("symptom_onset_time", selectedDate);
+    } else if (Platform.OS === "ios") {
+      setShowDatePicker(false);
+    }
+  };
+
+  const showAndroidPicker = () => {
+    DateTimePickerAndroid.open({
+      value: onsetTime,
+      onChange: onDateChange,
+      mode: "datetime",
+      is24Hour: true,
+    });
+  };
+
   const onSubmit = async (data: ClinicianEvaluationForm) => {
     setIsSubmitting(true);
     const { error } = await submitClinicalEvaluation(patient.id, data);
-
     if (error) {
       Alert.alert("Update Failed", error.message);
       setIsSubmitting(false);
@@ -60,38 +83,37 @@ export default function ClinicianEvaluationScreen({
       className="flex-1 bg-slate-50"
       contentContainerStyle={{ paddingBottom: 40 }}
     >
-      {/* Patient Context Header */}
       <View className="bg-slate-900 pt-16 pb-6 px-6">
-        <Text className="text-slate-400 uppercase text-xs font-bold tracking-wider mb-1">
+        <Text className="text-slate-400 uppercase text-xs font-bold mb-1">
           EMO Handoff Data
         </Text>
         <Text className="text-white text-2xl font-bold">{patient.name}</Text>
         <Text className="text-slate-300 mt-1">
-          UHID: {patient.uhid} | {patient.age} yrs | {patient.gender}
+          UHID: {patient.uhid} | {patient.age} yrs
         </Text>
       </View>
 
       <View className="px-6 mt-6 space-y-4">
-        {/* Date/Time Picker */}
         <View>
           <Text className="text-slate-700 font-medium mb-1">
             Symptom Onset Time
           </Text>
           <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
+            onPress={() =>
+              Platform.OS === "android"
+                ? showAndroidPicker()
+                : setShowDatePicker(true)
+            }
             className="w-full p-4 bg-white border border-slate-200 rounded-xl"
           >
             <Text className="text-slate-900">{onsetTime.toLocaleString()}</Text>
           </TouchableOpacity>
-          {showDatePicker && (
+          {Platform.OS === "ios" && showDatePicker && (
             <DateTimePicker
               value={onsetTime}
               mode="datetime"
               display="default"
-              onChange={(event, date) => {
-                setShowDatePicker(false);
-                if (date) setValue("symptom_onset_time", date);
-              }}
+              onChange={onDateChange}
             />
           )}
           {errors.symptom_onset_time && (
@@ -101,7 +123,6 @@ export default function ClinicianEvaluationScreen({
           )}
         </View>
 
-        {/* NIHHS Score */}
         <View>
           <Controller
             control={control}
@@ -124,7 +145,6 @@ export default function ClinicianEvaluationScreen({
           )}
         </View>
 
-        {/* Vitals Row */}
         <View className="flex-row space-x-4">
           <View className="flex-1">
             <Controller
@@ -169,7 +189,6 @@ export default function ClinicianEvaluationScreen({
           </View>
         </View>
 
-        {/* Pulse & Comorbidities */}
         <View>
           <Controller
             control={control}
@@ -211,7 +230,6 @@ export default function ClinicianEvaluationScreen({
           />
         </View>
 
-        {/* Submit Button */}
         <TouchableOpacity
           className={`w-full p-4 rounded-xl items-center mt-4 flex-row justify-center ${isSubmitting ? "bg-orange-400" : "bg-orange-500"}`}
           onPress={handleSubmit(onSubmit)}

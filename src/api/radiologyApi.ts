@@ -6,26 +6,25 @@ export const uploadCTScan = async (
   patientId: string,
 ): Promise<string | null> => {
   try {
-    // 1. Convert React Native file URI to Blob
-    const response = await fetch(uri);
-    const blob = await response.blob();
-
-    // 2. Generate secure, unique file path (patient_id/uuid.ext)
     const fileExt = uri.split(".").pop() || "jpg";
     const fileName = `${Crypto.randomUUID()}.${fileExt}`;
     const filePath = `${patientId}/${fileName}`;
 
-    // 3. Upload to secure private bucket
+    // 1. Construct React Native FormData to natively stream the file
+    const formData = new FormData();
+    formData.append("file", {
+      uri: uri,
+      name: fileName,
+      type: `image/${fileExt === "jpg" ? "jpeg" : fileExt}`,
+    } as any); // Cast to 'any' to satisfy TypeScript for RN's custom FormData structure
+
+    // 2. Upload the form data directly to Supabase
     const { error } = await supabase.storage
       .from("ct_scans")
-      .upload(filePath, blob, {
-        contentType: `image/${fileExt === "jpg" ? "jpeg" : fileExt}`,
-        upsert: false,
-      });
+      .upload(filePath, formData);
 
     if (error) throw error;
 
-    // Return the internal path, NOT a public URL
     return filePath;
   } catch (err: any) {
     console.error("Upload failed:", err.message);
