@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { supabase } from "../../lib/supabase";
 import { PatientRow } from "../../types/patient";
 import { useAuthStore } from "../../store/useAuthStore";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = NativeStackScreenProps<any, "ClinicianDashboard">;
 type TabType = "NEW" | "READY";
@@ -12,20 +19,37 @@ export default function ClinicianDashboard({ navigation }: Props) {
   const { signOut } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>("NEW");
   const [patients, setPatients] = useState<PatientRow[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // 1. Stable fetch function using useCallback
+  const fetchPatients = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("patients")
+      .select("*")
+      .in("status", ["AWAITING_CLINICIAN", "TREATMENT_IN_PROGRESS"])
+      .order("created_at", { ascending: false }); // FIXED: Newest alerts at the TOP
+
+    if (!error && data) {
+      setPatients(data as PatientRow[]);
+    }
+  }, []);
+
+  // 2. Pull-to-Refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPatients();
+    setRefreshing(false);
+  }, [fetchPatients]);
+
+  // 3. Auto-refresh when navigating back to this tab
+  useFocusEffect(
+    useCallback(() => {
+      fetchPatients();
+    }, [fetchPatients]),
+  );
+
+  // 4. Real-time background sync
   useEffect(() => {
-    const fetchPatients = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("*")
-        .in("status", ["AWAITING_CLINICIAN", "TREATMENT_IN_PROGRESS"])
-        .order("created_at", { ascending: true });
-      if (data) setPatients(data as PatientRow[]);
-    };
-
-    fetchPatients();
-
-    // Listen to ALL patient changes to handle transitions between statuses perfectly
     const channel = supabase
       .channel("clinician_dashboard_sync")
       .on(
@@ -40,7 +64,7 @@ export default function ClinicianDashboard({ navigation }: Props) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchPatients]);
 
   const filteredPatients = patients.filter((p) =>
     activeTab === "NEW"
@@ -64,7 +88,6 @@ export default function ClinicianDashboard({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        {/* Custom Segmented Tabs */}
         <View className="flex-row bg-red-800/50 p-1 rounded-xl">
           <TouchableOpacity
             onPress={() => setActiveTab("NEW")}
@@ -100,6 +123,9 @@ export default function ClinicianDashboard({ navigation }: Props) {
         data={filteredPatients}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() =>

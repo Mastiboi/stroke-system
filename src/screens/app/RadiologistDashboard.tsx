@@ -1,28 +1,49 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { supabase } from "../../lib/supabase";
 import { PatientRow } from "../../types/patient";
 import { useAuthStore } from "../../store/useAuthStore";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = NativeStackScreenProps<any, "RadiologistDashboard">;
 
 export default function RadiologistDashboard({ navigation }: Props) {
   const { signOut } = useAuthStore();
   const [pendingScans, setPendingScans] = useState<PatientRow[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchPending = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("patients")
+      .select("*")
+      .eq("status", "AWAITING_RADIOLOGIST")
+      .order("alert_radiologist_at", { ascending: false }); // FIXED: Newest alerts at the TOP
+
+    if (!error && data) {
+      setPendingScans(data as PatientRow[]);
+    }
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPending();
+    setRefreshing(false);
+  }, [fetchPending]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPending();
+    }, [fetchPending]),
+  );
 
   useEffect(() => {
-    const fetchPending = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("status", "AWAITING_RADIOLOGIST")
-        .order("alert_radiologist_at", { ascending: true });
-      if (data) setPendingScans(data as PatientRow[]);
-    };
-
-    fetchPending();
-
     const channel = supabase
       .channel("radiology_alerts")
       .on(
@@ -40,7 +61,7 @@ export default function RadiologistDashboard({ navigation }: Props) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchPending]);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -63,6 +84,13 @@ export default function RadiologistDashboard({ navigation }: Props) {
         data={pendingScans}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#ffffff"
+          />
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() =>
