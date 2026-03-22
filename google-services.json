@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "744974927547",
+    "project_id": "stroke-alert-7f8fb",
+    "storage_bucket": "stroke-alert-7f8fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:744974927547:android:42df24205f50e1208fcb9e",
+        "android_client_info": {
+          "package_name": "com.hospital.strokesystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFRqychqTAfd97Va2g_zlaVtbEo6ag2dE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

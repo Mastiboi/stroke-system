@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Stroke-system",
+    "name": "GMCH Stroke Alerts",
     "slug": "Stroke-system",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,25 +9,28 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.hospital.strokesystem",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ]
+    "plugins": ["@react-native-community/datetimepicker"],
+    "extra": {
+      "eas": {
+        "projectId": "b41710fe-73ea-4f8a-8ebd-99991824109a"
+      }
+    }
   }
 }
