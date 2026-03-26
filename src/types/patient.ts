@@ -4,7 +4,7 @@ import { z } from "zod";
 export const emoPatientSchema = z.object({
   name: z.string().min(2, "Patient name is required"),
   gender: z.enum(["Male", "Female", "Other"], {
-    required_error: "Gender is required",
+    message: "Gender is required",
   }),
   age: z.coerce
     .number()
@@ -33,4 +33,13 @@ export interface PatientRow {
   created_at: string;
   updated_at: string;
   alert_clinician_at: string | null;
+  
+  symptom_onset_time?: string;
+  nihhs_score?: number;
+  bp?: string;
+  spo2?: number;
+  pulse?: number;
+  comorbidities?: string;
+  ct_report_text?: string;
+  scan_image_urls?: string[];
 }

@@ -22,7 +22,7 @@ const registerSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters for security"),
   role: z.enum(["EMO", "CLINICIAN", "RADIOLOGIST"], {
-    message: "Role selection is required", // <-- FIXED: Changed from required_error
+    message: "Role selection is required",
   }),
 });
 
@@ -80,11 +80,12 @@ export default function RegisterScreen({ navigation }: Props) {
               name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  className={`w-full p-4 bg-white border rounded-xl ${errors.name ? "border-red-500" : "border-slate-200"}`}
+                  className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.name ? "border-red-500" : "border-slate-200"}`}
                   placeholder="Full Name (e.g., Dr. Jane Doe)"
+                  placeholderTextColor="#94a3b8"
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  value={value}
+                  value={value || ""}
                 />
               )}
             />
@@ -101,13 +102,14 @@ export default function RegisterScreen({ navigation }: Props) {
               name="email"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  className={`w-full p-4 bg-white border rounded-xl ${errors.email ? "border-red-500" : "border-slate-200"}`}
+                  className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.email ? "border-red-500" : "border-slate-200"}`}
                   placeholder="Hospital Email"
+                  placeholderTextColor="#94a3b8"
                   autoCapitalize="none"
                   keyboardType="email-address"
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  value={value}
+                  value={value || ""}
                 />
               )}
             />
@@ -124,12 +126,13 @@ export default function RegisterScreen({ navigation }: Props) {
               name="password"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  className={`w-full p-4 bg-white border rounded-xl ${errors.password ? "border-red-500" : "border-slate-200"}`}
+                  className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.password ? "border-red-500" : "border-slate-200"}`}
                   placeholder="Secure Password"
+                  placeholderTextColor="#94a3b8"
                   secureTextEntry
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  value={value}
+                  value={value || ""}
                 />
               )}
             />
@@ -147,7 +150,11 @@ export default function RegisterScreen({ navigation }: Props) {
               control={control}
               name="role"
               render={({ field: { onChange, value } }) => (
-                <Picker selectedValue={value} onValueChange={onChange}>
+                <Picker
+                  selectedValue={value}
+                  onValueChange={onChange}
+                  style={{ color: "#0f172a" }} // Force text color for picker
+                >
                   <Picker.Item
                     label="Emergency Medical Officer (EMO)"
                     value="EMO"

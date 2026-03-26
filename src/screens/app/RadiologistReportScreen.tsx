@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import { PatientRow } from "../../types/patient";
 import * as ImagePicker from "expo-image-picker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { uploadCTScan, submitRadiologyReport } from "../../api/radiologyApi";
@@ -16,7 +17,7 @@ import { uploadCTScan, submitRadiologyReport } from "../../api/radiologyApi";
 type Props = NativeStackScreenProps<any, "RadiologistReport">;
 
 export default function RadiologistReportScreen({ route, navigation }: Props) {
-  const { patient } = route.params;
+  const { patient } = route.params as { patient: PatientRow };
   const [reportText, setReportText] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +94,10 @@ export default function RadiologistReportScreen({ route, navigation }: Props) {
           NIHHS Score: {patient.nihhs_score} | BP: {patient.bp}
         </Text>
         <Text className="text-slate-400 text-sm mt-2">
-          Onset: {new Date(patient.symptom_onset_time).toLocaleString()}
+          Onset:{" "}
+          {patient.symptom_onset_time
+            ? new Date(patient.symptom_onset_time).toLocaleString()
+            : "Not recorded"}
         </Text>
       </View>
 

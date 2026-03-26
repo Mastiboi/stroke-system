@@ -10,12 +10,13 @@ import {
   Modal,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { PatientRow } from "../../types/patient";
 import { getSignedImageUrls, completeTreatment } from "../../api/clinicianApi";
 
 type Props = NativeStackScreenProps<any, "ClinicianTreatment">;
 
 export default function ClinicianTreatmentScreen({ route, navigation }: Props) {
-  const { patient } = route.params;
+  const { patient } = route.params as { patient: PatientRow };
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export default function ClinicianTreatmentScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     const fetchImages = async () => {
-      const urls = await getSignedImageUrls(patient.scan_image_urls);
+      const urls = await getSignedImageUrls(patient.scan_image_urls || null);
       setImageUrls(urls);
       setLoadingImages(false);
     };

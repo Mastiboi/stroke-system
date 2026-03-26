@@ -5,19 +5,23 @@ import * as Notifications from "expo-notifications";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/useAuthStore";
 
-// Configure foreground notification behavior
+// 1. FIX: Added shouldShowBanner and shouldShowList for Expo SDK 50+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
+    shouldShowBanner: true, 
+    shouldShowList: true,
   }),
 });
 
 export function usePushNotifications() {
   const { session } = useAuthStore();
   const [deviceToken, setDeviceToken] = useState<string | undefined>();
-  const responseListener = useRef<Notifications.Subscription>();
+  
+  // 2. FIX: Passed 'null' as the initial argument for React 19 strict mode
+  const responseListener = useRef<Notifications.Subscription | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -25,7 +29,6 @@ export function usePushNotifications() {
     registerForPushNotificationsAsync().then((token) => {
       if (token) {
         setDeviceToken(token);
-        // Save the raw push token to the user's profile
         supabase
           .from("profiles")
           .update({ fcm_token: token })
@@ -36,17 +39,14 @@ export function usePushNotifications() {
       }
     });
 
-    // Handle user tapping the notification (foreground/background)
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log("Notification tapped!");
-      // Since the RootNavigator manages our secure auth flow, simply tapping 
-      // the notification and opening the app will automatically route 
-      // the clinician/radiologist to their real-time dashboard.
     });
 
     return () => {
+      // 3. FIX: Call .remove() directly on the subscription object
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, [session]);
@@ -55,12 +55,16 @@ export function usePushNotifications() {
     let token;
 
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FF231F7C",
-      });
+      try {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "Urgent Alerts",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+        });
+      } catch (error) {
+        console.warn("OS blocked notification channel creation:", error);
+      }
     }
 
     if (Device.isDevice) {
@@ -76,7 +80,6 @@ export function usePushNotifications() {
         return;
       }
 
-      // We use getDevicePushTokenAsync() because our backend interfaces directly with FCM
       token = (await Notifications.getDevicePushTokenAsync()).data;
     } else {
       console.log("Must use physical device for Push Notifications");

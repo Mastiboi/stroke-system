@@ -26,7 +26,7 @@ export default function EMODashboard() {
     reset,
     formState: { errors },
   } = useForm<EMOPatientForm>({
-    resolver: zodResolver(emoPatientSchema),
+    resolver: zodResolver(emoPatientSchema) as any,
     defaultValues: { gender: "Male" },
   });
 
@@ -75,11 +75,12 @@ export default function EMODashboard() {
             name="name"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`w-full p-4 bg-white border rounded-xl ${errors.name ? "border-red-500" : "border-slate-200"}`}
+                className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.name ? "border-red-500" : "border-slate-200"}`}
                 placeholder="Patient Name"
+                placeholderTextColor="#94a3b8"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                value={value}
+                value={value || ""}
               />
             )}
           />
@@ -97,12 +98,13 @@ export default function EMODashboard() {
               name="age"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  className={`w-full p-4 bg-white border rounded-xl ${errors.age ? "border-red-500" : "border-slate-200"}`}
+                  className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.age ? "border-red-500" : "border-slate-200"}`}
                   placeholder="Age"
+                  placeholderTextColor="#94a3b8"
                   keyboardType="numeric"
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  value={value?.toString()}
+                  value={value?.toString() || ""}
                 />
               )}
             />
@@ -118,7 +120,11 @@ export default function EMODashboard() {
               control={control}
               name="gender"
               render={({ field: { onChange, value } }) => (
-                <Picker selectedValue={value} onValueChange={onChange}>
+                <Picker
+                  selectedValue={value}
+                  onValueChange={onChange}
+                  style={{ color: "#0f172a" }} // Force text color
+                >
                   <Picker.Item label="Male" value="Male" />
                   <Picker.Item label="Female" value="Female" />
                   <Picker.Item label="Other" value="Other" />
@@ -134,12 +140,13 @@ export default function EMODashboard() {
             name="uhid"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`w-full p-4 bg-white border rounded-xl ${errors.uhid ? "border-red-500" : "border-slate-200"}`}
+                className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.uhid ? "border-red-500" : "border-slate-200"}`}
                 placeholder="Hospital UHID"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="characters"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                value={value}
+                value={value || ""}
               />
             )}
           />
@@ -156,12 +163,13 @@ export default function EMODashboard() {
             name="contact"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`w-full p-4 bg-white border rounded-xl ${errors.contact ? "border-red-500" : "border-slate-200"}`}
+                className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.contact ? "border-red-500" : "border-slate-200"}`}
                 placeholder="Emergency Contact Number"
+                placeholderTextColor="#94a3b8"
                 keyboardType="phone-pad"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                value={value}
+                value={value || ""}
               />
             )}
           />

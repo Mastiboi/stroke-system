@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { PatientRow } from "../../types/patient";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker, {
@@ -28,7 +29,7 @@ export default function ClinicianEvaluationScreen({
   route,
   navigation,
 }: Props) {
-  const { patient } = route.params;
+  const { patient } = route.params as { patient: PatientRow };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -39,7 +40,7 @@ export default function ClinicianEvaluationScreen({
     watch,
     formState: { errors },
   } = useForm<ClinicianEvaluationForm>({
-    resolver: zodResolver(clinicianEvaluationSchema),
+    resolver: zodResolver(clinicianEvaluationSchema) as any,
     defaultValues: { symptom_onset_time: new Date() },
   });
 
@@ -59,9 +60,17 @@ export default function ClinicianEvaluationScreen({
   const showAndroidPicker = () => {
     DateTimePickerAndroid.open({
       value: onsetTime,
-      onChange: onDateChange,
-      mode: "datetime",
-      is24Hour: true,
+      mode: "date",
+      onChange: (event, selectedDate) => {
+        if (event.type === "set" && selectedDate) {
+          DateTimePickerAndroid.open({
+            value: selectedDate,
+            mode: "time",
+            is24Hour: true,
+            onChange: onDateChange,
+          });
+        }
+      },
     });
   };
 

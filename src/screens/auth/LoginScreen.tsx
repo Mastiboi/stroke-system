@@ -52,13 +52,14 @@ export default function LoginScreen({ navigation }: Props) {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`w-full p-4 bg-white border rounded-xl ${errors.email ? "border-red-500" : "border-slate-200"}`}
+                className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.email ? "border-red-500" : "border-slate-200"}`}
                 placeholder="Hospital Email"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                value={value}
+                value={value || ""}
               />
             )}
           />
@@ -75,12 +76,13 @@ export default function LoginScreen({ navigation }: Props) {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`w-full p-4 bg-white border rounded-xl ${errors.password ? "border-red-500" : "border-slate-200"}`}
+                className={`w-full p-4 bg-white text-slate-900 border rounded-xl ${errors.password ? "border-red-500" : "border-slate-200"}`}
                 placeholder="Password"
+                placeholderTextColor="#94a3b8"
                 secureTextEntry
                 onBlur={onBlur}
                 onChangeText={onChange}
-                value={value}
+                value={value || ""}
               />
             )}
           />
